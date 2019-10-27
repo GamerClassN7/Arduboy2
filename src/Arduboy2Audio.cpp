@@ -11,7 +11,7 @@ bool Arduboy2Audio::audio_enabled = false;
 
 void Arduboy2Audio::on()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   // fire up audio pins by seting them as outputs
 #ifdef ARDUBOY_10
   bitSet(SPEAKER_1_DDR, SPEAKER_1_BIT);
@@ -27,7 +27,7 @@ void Arduboy2Audio::off()
 {
   audio_enabled = false;
   // shut off audio pins by setting them as inputs
-#ifndef ESP8266  
+#if !defined (ESP8266) && !defined (ESP32)  
 #ifdef ARDUBOY_10
   bitClear(SPEAKER_1_DDR, SPEAKER_1_BIT);
   bitClear(SPEAKER_2_DDR, SPEAKER_2_BIT);

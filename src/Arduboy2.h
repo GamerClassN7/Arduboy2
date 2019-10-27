@@ -7,9 +7,17 @@
 #ifndef ARDUBOY2_H
 #define ARDUBOY2_H
 
-#ifdef ESP8266
+#define DISPLAY_ILI9341
+#define DISPLAY_ILI9341_FILTER
+
+#if defined (ESP8266) || defined (ESP32)
+#ifdef DISPLAY_ILI9341
+#include "SPI.h"
+#include "TFT_eSPI.h"
+#else 
 #include <brzo_i2c.h> // Only needed for Arduino 1.6.5 and earlier
 #include "SSD1306Brzo.h"
+#endif
 #endif
 
 #include <Arduino.h>
@@ -1259,10 +1267,39 @@ class Arduboy2Base : public Arduboy2Core
    */
    
  
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
   static uint8_t sBuffer[(HEIGHT*WIDTH)/8];
 #else	
+	
+#ifdef DISPLAY_ILI9341 
+	void displayLineOnILI9341(uint16_t xPos, uint16_t yStart, uint16_t yLength, uint8_t color8Bit);	
+	void manipulateDisplayBuffer();
+	void displayILI9341();
+	
+#ifdef DISPLAY_ILI9341_FILTER	
+	static uint8_t oBuffer[HEIGHT*WIDTH];
+  static uint8_t sBuffer[(HEIGHT*2*WIDTH*2)];
+  static uint8_t cBuffer[(HEIGHT*2*WIDTH*2)];
+	
+	// hold the four colors of the current filter
+	uint16_t filterColorsArray[4];
+	uint8_t filterSet;
+	
+	void toggleFilterSet();
+	void changeFilterSet(uint8_t set);
+
+	void set16BitFilterColors(uint16_t lightColor, uint16_t lightGrey, uint16_t darkGrey, uint16_t darkColor);
+	
+#else
+  static uint8_t sBuffer[(HEIGHT*WIDTH)/8];
+  static uint8_t cBuffer[(HEIGHT*WIDTH)/8];
+#endif	
+	
+#else
+	// set the pointer to the oled library in arduboy::begin()
   static uint8_t* sBuffer;
+#endif
+
 #endif	
 
  protected:

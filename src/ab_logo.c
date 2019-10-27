@@ -4,6 +4,7 @@
  * The ARDUBOY logo bitmap.
  */
 
+#include <Arduino.h>
 #include <avr/pgmspace.h>
 
 #ifndef ARDUBOY_LOGO_CREATED

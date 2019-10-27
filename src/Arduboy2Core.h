@@ -9,7 +9,7 @@
 
 #include <Arduino.h>
 
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
@@ -26,6 +26,7 @@
 
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
+#define abs(a) 	 ((a)>(0)?(a):(-a))
 
 // use Slimboy, because hopefully it is easier to convert than the original code
 #if defined(__AVR_ATmega328P__) || defined(ESP8266) 
@@ -186,11 +187,19 @@
 #define B_BUTTON_BIT PORTB4
 #endif
 
-#ifdef ESP8266
+#if defined (ESP8266) || defined (ESP32)
 
+
+#ifdef ESP8266
 // there is only one pin for audio
 #define PIN_SPEAKER_1 D3  
 #define PIN_SPEAKER_2 D3
+#else 
+// TODO set a pin
+#define PIN_SPEAKER_1 13  
+#define PIN_SPEAKER_2 13
+#endif
+
 
 /*
 #define SPEAKER_1_PORT PORTB
@@ -304,7 +313,7 @@
 
 // ----- Pins common on Arduboy and DevKit -----
 
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 // Unconnected analog input used for noise by initRandomSeed()
 #define RAND_SEED_IN A4
 #define RAND_SEED_IN_PORT PORTF
@@ -433,7 +442,7 @@ class Arduboy2Core
   public:
     Arduboy2Core();
 
-#ifdef ESP8266		
+#if defined (ESP8266) || defined (ESP32)		
     void setExternalButtons(uint8_t but);	
 		
 	void setExternalButtonsHandler(void (*function)());

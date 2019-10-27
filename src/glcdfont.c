@@ -4,7 +4,7 @@
  * The font definitions used to display text characters.
  */
 
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #endif
@@ -14,7 +14,7 @@
 
 // standard ascii 5x7 font
 
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 static const unsigned char font[] PROGMEM =
 #else
 static const unsigned char font[] =

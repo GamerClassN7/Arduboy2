@@ -6,7 +6,7 @@
 
 #include "Arduboy2Core.h"
 
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #include <Wire.h>
 #else
 uint8_t externalButtons;		
@@ -93,7 +93,7 @@ void Arduboy2Core::boot()
   setCPUSpeed8MHz();
   #endif
 
-	#ifndef ESP8266
+	#if !defined (ESP8266) && !defined (ESP32)
   // Select the ADC input here so a delay isn't required in initRandomSeed()
   ADMUX = RAND_SEED_IN_ADMUX;
 	#endif
@@ -106,7 +106,7 @@ void Arduboy2Core::boot()
 
 #ifdef ARDUBOY_SET_CPU_8MHZ
 // 8MHz on a esp8266...
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 // If we're compiling for 8MHz we need to slow the CPU down because the
 // hardware clock on the Arduboy is 16MHz.
 // We also need to readjust the PLL prescaler because the Arduino USB code
@@ -128,7 +128,7 @@ void Arduboy2Core::setCPUSpeed8MHz()
 // This routine must be modified if any pins are moved to a different port
 void Arduboy2Core::bootPins()
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #ifdef ARDUBOY_10
 
   // Port B INPUT_PULLUP or HIGH
@@ -214,7 +214,7 @@ void Arduboy2Core::bootPins()
 
 void Arduboy2Core::bootOLED()
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
   // reset the display
   delayShort(5); // reset pin should be low here. let it stay low a while
   bitSet(RST_PORT, RST_BIT); // set high to come out of reset
@@ -236,14 +236,14 @@ void Arduboy2Core::bootOLED()
 
 void Arduboy2Core::LCDDataMode()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   bitSet(DC_PORT, DC_BIT);
 #endif
 }
 
 void Arduboy2Core::LCDCommandMode()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   bitClear(DC_PORT, DC_BIT);
 #endif	
 }
@@ -252,7 +252,7 @@ void Arduboy2Core::LCDCommandMode()
 // Initialize the SPI interface for the display
 void Arduboy2Core::bootSPI()
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 // master, mode 0, MSB first, CPU clock / 2 (8MHz)
   SPCR = _BV(SPE) | _BV(MSTR);
   SPSR = _BV(SPI2X);
@@ -263,7 +263,7 @@ void Arduboy2Core::bootSPI()
 // Write to the SPI bus (MOSI pin)
 void Arduboy2Core::SPItransfer(uint8_t data)
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   SPDR = data;
   /*
    * The following NOP introduces a small delay that can prevent the wait
@@ -278,7 +278,7 @@ void Arduboy2Core::SPItransfer(uint8_t data)
 
 void Arduboy2Core::safeMode()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   if (buttonsState() == UP_BUTTON)
   {
     digitalWriteRGB(RED_LED, RGB_ON);
@@ -300,7 +300,7 @@ void Arduboy2Core::safeMode()
 
 void Arduboy2Core::idle()
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
   SMCR = _BV(SE); // select idle mode and enable sleeping
   sleep_cpu();
   SMCR = 0; // disable sleeping
@@ -309,7 +309,7 @@ void Arduboy2Core::idle()
 
 void Arduboy2Core::bootPowerSaving()
 {
-#ifdef ESP8266
+#if defined (ESP8266) || defined (ESP32)
   // FIXME
 #else
   // disable Two Wire Interface (I2C) and the ADC
@@ -324,7 +324,7 @@ void Arduboy2Core::bootPowerSaving()
 // Shut down the display
 void Arduboy2Core::displayOff()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   LCDCommandMode();
   SPItransfer(0xAE); // display off
   SPItransfer(0x8D); // charge pump:
@@ -340,7 +340,7 @@ void Arduboy2Core::displayOff()
 // Restart the display after a displayOff()
 void Arduboy2Core::displayOn()
 {
-#ifndef ESP8266		
+#if !defined (ESP8266) && !defined (ESP32)		
   bootOLED();
 #else
 	sendLCDCommand(DISPLAYON);
@@ -356,7 +356,7 @@ uint8_t Arduboy2Core::height() { return HEIGHT; }
 
 void Arduboy2Core::paint8Pixels(uint8_t pixels)
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   SPItransfer(pixels);
 #else
 	uint8_t command[2] = {0x40, pixels};
@@ -369,7 +369,7 @@ void Arduboy2Core::paint8Pixels(uint8_t pixels)
 
 void Arduboy2Core::paintScreen(const uint8_t *image)
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
   {
     SPI.transfer(pgm_read_byte(image + i));
@@ -395,7 +395,7 @@ void Arduboy2Core::paintScreen(const uint8_t *image)
 // It is specifically tuned for a 16MHz CPU clock and SPI clocking at 8MHz.
 void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
   uint16_t count;
 
   asm volatile (
@@ -433,7 +433,7 @@ void Arduboy2Core::paintScreen(uint8_t image[], bool clear)
 
 void Arduboy2Core::blank()
 {
-#ifndef ESP8266		
+#if !defined (ESP8266) && !defined (ESP32)		
   for (int i = 0; i < (HEIGHT*WIDTH)/8; i++)
     SPI.transfer(0x00);
 #else
@@ -443,7 +443,7 @@ void Arduboy2Core::blank()
 
 void Arduboy2Core::sendLCDCommand(uint8_t command)
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   LCDCommandMode();
   SPI.transfer(command);
   LCDDataMode();
@@ -485,7 +485,7 @@ void Arduboy2Core::flipHorizontal(bool flipped)
 
 void Arduboy2Core::setRGBled(uint8_t red, uint8_t green, uint8_t blue)
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #if defined(ARDUBOY_10) // RGB, all the pretty colors
   // timer 0: Fast PWM, OC0A clear on compare / set at top
   // We must stay in Fast PWM mode because timer 0 is used for system timing.
@@ -509,7 +509,7 @@ void Arduboy2Core::setRGBled(uint8_t red, uint8_t green, uint8_t blue)
 
 void Arduboy2Core::setRGBled(uint8_t color, uint8_t val)
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #if defined(ARDUBOY_10)
   if (color == RED_LED)
   {
@@ -535,7 +535,7 @@ void Arduboy2Core::setRGBled(uint8_t color, uint8_t val)
 
 void Arduboy2Core::freeRGBled()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
 #ifdef ARDUBOY_10
   // clear the COM bits to return the pins to normal I/O mode
   TCCR0A = _BV(WGM01) | _BV(WGM00);
@@ -546,7 +546,7 @@ void Arduboy2Core::freeRGBled()
 
 void Arduboy2Core::digitalWriteRGB(uint8_t red, uint8_t green, uint8_t blue)
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
 #ifdef ARDUBOY_10
   bitWrite(RED_LED_PORT, RED_LED_BIT, red);
   bitWrite(GREEN_LED_PORT, GREEN_LED_BIT, green);
@@ -562,7 +562,7 @@ void Arduboy2Core::digitalWriteRGB(uint8_t red, uint8_t green, uint8_t blue)
 
 void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
 #ifdef ARDUBOY_10
   if (color == RED_LED)
   {
@@ -588,7 +588,7 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
 
 /* Buttons */
 
-#ifdef ESP8266		
+#if defined (ESP8266) || defined (ESP32)		
 void Arduboy2Core::setExternalButtons(uint8_t but) {
 	
 	externalButtons	= but;
@@ -603,7 +603,7 @@ void Arduboy2Core::setExternalButtonsHandler(void (*function)())
 
 uint8_t Arduboy2Core::buttonsState()
 {
-#ifndef ESP8266	
+#if !defined (ESP8266) && !defined (ESP32)	
   uint8_t buttons;	
 
 	// get the buttons form PS2 lib
@@ -647,7 +647,7 @@ uint8_t Arduboy2Core::buttonsState()
 	// in this callback function the externalButtons should be updated#
 	if (hasExternalButtonsHandler)
 		(*externalButtonsHandler)();
-	
+
   return externalButtons;
 #endif
 }
@@ -660,7 +660,7 @@ void Arduboy2Core::delayShort(uint16_t ms)
 
 void Arduboy2Core::exitToBootloader()
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
   cli();
   // enable watchdog timer reset, with 16ms timeout
   wdt_reset();
@@ -676,7 +676,7 @@ void Arduboy2Core::exitToBootloader()
 
 void Arduboy2Core::mainNoUSB()
 {
-#ifndef ESP8266
+#if !defined (ESP8266) && !defined (ESP32)
   // disable USB
   UDCON = _BV(DETACH);
   UDIEN = 0;

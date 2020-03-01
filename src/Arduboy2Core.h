@@ -9,34 +9,51 @@
 
 #include <Arduino.h>
 
-#if !defined (ESP8266) && !defined (ESP32)
+
+#ifdef DISPLAY_SSD1306
+#include <brzo_i2c.h>
+#include "SSD1306Brzo.h"
+//include "../displays/Display_SSD1306.h"
+#endif
+
+
+// the speaker pins for my two esp setups
+#ifndef __AVR_ATmega328P__
+#if defined(ESP8266)
+#define SPEAKER_PIN D3
+#elif defined(ESP32)
+#define SPEAKER_PIN 13
+#else
+#error please choose a speaker pin for your setup
+#endif
+#endif
+
+// this define limits the calls of the externalButtonsHandler() function
+#define LIMIT_BUTTON_CALLS (1000 / 30)
+
+#ifdef __AVR_ATmega328P__
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <SPI.h>
-#else
-#include <brzo_i2c.h> // Only needed for Arduino 1.6.5 and earlier
-#include "SSD1306Brzo.h"
-
-#define OLED_I2C_ADRESS 0x3c
-#define LIMIT_BUTTON_CALLS (1000 / 30)
 #endif
 
 #include <limits.h>
 
-#define max(a,b) ((a)>(b)?(a):(b))
-#define min(a,b) ((a)<(b)?(a):(b))
-#define abs(a) 	 ((a)>(0)?(a):(-a))
-
-// use Slimboy, because hopefully it is easier to convert than the original code
-#if defined(__AVR_ATmega328P__) || defined(ESP8266) 
-#warning SLIMBOY!
-#define SLIMBOY
+// some chips may don´t have those defines
+#ifndef max
+#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef abs
+#define abs(a) ((a) > (0) ? (a) : (-a))
+#endif
 
 // main hardware compile flags
-
 #if !defined(ARDUBOY_10) && !defined(AB_DEVKIT)
 /* defaults to Arduboy Release 1.0 if not using a boards.txt file
  *
@@ -50,7 +67,7 @@
  *     // #define ARDUBOY_10
  *     #define AB_DEVKIT
  */
-#define ARDUBOY_10   //< compile for the production Arduboy v1.0
+#define ARDUBOY_10 //< compile for the production Arduboy v1.0
 // #define AB_DEVKIT    //< compile for the official dev kit
 #endif
 
@@ -58,36 +75,20 @@
 #define RGB_OFF HIGH /**< For digitially setting an RGB LED off using digitalWriteRGB() */
 
 // ----- Arduboy pins -----
-#ifdef ARDUBOY_10
 
-#ifndef SLIMBOY
-#define PIN_CS 12       // Display CS Arduino pin number
-#define CS_PORT PORTD   // Display CS port
-#define CS_BIT PORTD6   // Display CS physical bit number
+#ifdef __AVR_ATmega32U4__
+#define PIN_CS 12     // Display CS Arduino pin number
+#define CS_PORT PORTD // Display CS port
+#define CS_BIT PORTD6 // Display CS physical bit number
 
-#define PIN_DC 4        // Display D/C Arduino pin number
-#define DC_PORT PORTD   // Display D/C port
-#define DC_BIT PORTD4   // Display D/C physical bit number
+#define PIN_DC 4      // Display D/C Arduino pin number
+#define DC_PORT PORTD // Display D/C port
+#define DC_BIT PORTD4 // Display D/C physical bit number
 
-#define PIN_RST 6       // Display reset Arduino pin number
-#define RST_PORT PORTD  // Display reset port
-#define RST_BIT PORTD7  // Display reset physical bit number
-#endif
+#define PIN_RST 6      // Display reset Arduino pin number
+#define RST_PORT PORTD // Display reset port
+#define RST_BIT PORTD7 // Display reset physical bit number
 
-#ifdef SLIMBOY
-#define RED_LED 5   /**< The pin number for the red color in the RGB LED. */
-#define GREEN_LED 7 /**< The pin number for the greem color in the RGB LED. */
-#define BLUE_LED 6   /**< The pin number for the blue color in the RGB LED. */
-
-#define RED_LED_PORT PORTD
-#define RED_LED_BIT PORTD5
-
-#define GREEN_LED_PORT PORTD
-#define GREEN_LED_BIT PORTD7
-
-#define BLUE_LED_PORT PORTD
-#define BLUE_LED_BIT PORTD6
-#else
 #define RED_LED 10   /**< The pin number for the red color in the RGB LED. */
 #define GREEN_LED 11 /**< The pin number for the greem color in the RGB LED. */
 #define BLUE_LED 9   /**< The pin number for the blue color in the RGB LED. */
@@ -111,45 +112,7 @@
 #define A_BUTTON _BV(3)     /**< The A button value for functions requiring a bitmask */
 #define B_BUTTON _BV(2)     /**< The B button value for functions requiring a bitmask */
 
-#ifdef SLIMBOY
-#define PIN_LEFT_BUTTON 15
-#define LEFT_BUTTON_PORT PORTC
-#define LEFT_BUTTON_PORTIN PINC
-#define LEFT_BUTTON_DDR DDRC
-#define LEFT_BUTTON_BIT PORTC1
-
-#define PIN_RIGHT_BUTTON 3
-#define RIGHT_BUTTON_PORT PORTD
-#define RIGHT_BUTTON_PORTIN PIND
-#define RIGHT_BUTTON_DDR DDRD
-#define RIGHT_BUTTON_BIT PORTD3
-
-#define PIN_UP_BUTTON 17
-#define UP_BUTTON_PORT PORTC
-#define UP_BUTTON_PORTIN PINC
-#define UP_BUTTON_DDR DDRC
-#define UP_BUTTON_BIT PORTC3
-
-#define PIN_DOWN_BUTTON 2
-#define DOWN_BUTTON_PORT PORTD
-#define DOWN_BUTTON_PORTIN PIND
-#define DOWN_BUTTON_DDR DDRD
-#define DOWN_BUTTON_BIT PORTD2
-
-#define PIN_A_BUTTON 4
-#define A_BUTTON_PORT PORTD
-#define A_BUTTON_PORTIN PIND
-#define A_BUTTON_DDR DDRD
-#define A_BUTTON_BIT PORTD4
-
-#define PIN_B_BUTTON 16
-#define B_BUTTON_PORT PORTC
-#define B_BUTTON_PORTIN PINC
-#define B_BUTTON_DDR DDRC
-#define B_BUTTON_BIT PORTC2
-
-#else
-
+#ifdef __AVR_ATmega32U4__
 #define PIN_LEFT_BUTTON A2
 #define LEFT_BUTTON_PORT PORTF
 #define LEFT_BUTTON_PORTIN PINF
@@ -187,32 +150,9 @@
 #define B_BUTTON_BIT PORTB4
 #endif
 
-#if defined (ESP8266) || defined (ESP32)
-
-
-#ifdef ESP8266
-// there is only one pin for audio
-#define PIN_SPEAKER_1 D3  
-#define PIN_SPEAKER_2 D3
-#else 
-// TODO set a pin
-#define PIN_SPEAKER_1 13  
+#ifdef __AVR_ATmega32U4__
+#define PIN_SPEAKER_1 5
 #define PIN_SPEAKER_2 13
-#endif
-
-
-/*
-#define SPEAKER_1_PORT PORTB
-#define SPEAKER_1_DDR DDRB
-#define SPEAKER_1_BIT PORTB1
-
-#define SPEAKER_2_PORT PORTB
-#define SPEAKER_2_DDR DDRB
-#define SPEAKER_2_BIT PORTB3
-*/
-#else
-#define PIN_SPEAKER_1 5  
-#define PIN_SPEAKER_2 13 
 
 #define SPEAKER_1_PORT PORTC
 #define SPEAKER_1_DDR DDRC
@@ -221,106 +161,23 @@
 #define SPEAKER_2_PORT PORTC
 #define SPEAKER_2_DDR DDRC
 #define SPEAKER_2_BIT PORTC7
+#else
+// use speaker defined on top of this file
+#define PIN_SPEAKER_1 SPEAKER_PIN
+#define PIN_SPEAKER_2 SPEAKER_PIN
 #endif
+
 // -----------------------
-
-// ----- DevKit pins -----
-#elif defined(AB_DEVKIT)
-
-#define PIN_CS 6        // Display CS Arduino pin number
-#define CS_PORT PORTD   // Display CS port
-#define CS_BIT PORTD7   // Display CS physical bit number
-
-#define PIN_DC 4        // Display D/C Arduino pin number
-#define DC_PORT PORTD   // Display D/C port
-#define DC_BIT PORTD4   // Display D/C physical bit number
-
-#define PIN_RST 12      // Display reset Arduino pin number
-#define RST_PORT PORTD  // Display reset port
-#define RST_BIT PORTD6  // Display reset physical bit number
-
-#define SPI_MOSI_PORT PORTB
-#define SPI_MOSI_BIT PORTB2
-
-#define SPI_SCK_PORT PORTB
-#define SPI_SCK_BIT PORTB1
-
-// map all LEDs to the single TX LED on DEVKIT
-#define RED_LED 17
-#define GREEN_LED 17
-#define BLUE_LED 17
-
-#define BLUE_LED_PORT PORTB
-#define BLUE_LED_BIT PORTB0
-
-// bit values for button states
-// these are determined by the buttonsState() function
-#define LEFT_BUTTON _BV(5)
-#define RIGHT_BUTTON _BV(2)
-#define UP_BUTTON _BV(4)
-#define DOWN_BUTTON _BV(6)
-#define A_BUTTON _BV(1)
-#define B_BUTTON _BV(0)
-
-// pin values for buttons, probably shouldn't use these
-#define PIN_LEFT_BUTTON 9
-#define LEFT_BUTTON_PORT PORTB
-#define LEFT_BUTTON_PORTIN PINB
-#define LEFT_BUTTON_DDR DDRB
-#define LEFT_BUTTON_BIT PORTB5
-
-#define PIN_RIGHT_BUTTON 5
-#define RIGHT_BUTTON_PORT PORTC
-#define RIGHT_BUTTON_PORTIN PINC
-#define RIGHT_BUTTON_DDR DDRC
-#define RIGHT_BUTTON_BIT PORTC6
-
-#define PIN_UP_BUTTON 8
-#define UP_BUTTON_PORT PORTB
-#define UP_BUTTON_PORTIN PINB
-#define UP_BUTTON_DDR DDRB
-#define UP_BUTTON_BIT PORTB4
-
-#define PIN_DOWN_BUTTON 10
-#define DOWN_BUTTON_PORT PORTB
-#define DOWN_BUTTON_PORTIN PINB
-#define DOWN_BUTTON_DDR DDRB
-#define DOWN_BUTTON_BIT PORTB6
-
-#define PIN_A_BUTTON A0
-#define A_BUTTON_PORT PORTF
-#define A_BUTTON_PORTIN PINF
-#define A_BUTTON_DDR DDRF
-#define A_BUTTON_BIT PORTF7
-
-#define PIN_B_BUTTON A1
-#define B_BUTTON_PORT PORTF
-#define B_BUTTON_PORTIN PINF
-#define B_BUTTON_DDR DDRF
-#define B_BUTTON_BIT PORTF6
-
-#define PIN_SPEAKER_1 A2
-#define SPEAKER_1_PORT PORTF
-#define SPEAKER_1_DDR DDRF
-#define SPEAKER_1_BIT PORTF5
-// SPEAKER_2 is purposely not defined for DEVKIT as it could potentially
-// be dangerous and fry your hardware (because of the devkit wiring).
-//
-// Reference: https://github.com/Arduboy/Arduboy/issues/108
-
-#endif
-// --------------------
 
 // ----- Pins common on Arduboy and DevKit -----
 
-#if !defined (ESP8266) && !defined (ESP32)
+#ifdef __AVR_ATmega32U4__
 // Unconnected analog input used for noise by initRandomSeed()
 #define RAND_SEED_IN A4
 #define RAND_SEED_IN_PORT PORTF
 #define RAND_SEED_IN_BIT PORTF1
 // Value for ADMUX to read the random seed pin: 2.56V reference, ADC1
 #define RAND_SEED_IN_ADMUX (_BV(REFS0) | _BV(REFS1) | _BV(MUX0))
-#endif
 
 // SPI interface
 #define SPI_MISO_PORT PORTB
@@ -335,28 +192,26 @@
 #define SPI_SS_PORT PORTB
 #define SPI_SS_BIT PORTB0
 // --------------------
-
-// OLED hardware (SSD1306)
+#endif
 
 #define OLED_PIXELS_INVERTED 0xA7 // All pixels inverted
-#define OLED_PIXELS_NORMAL 0xA6 // All pixels normal
+#define OLED_PIXELS_NORMAL 0xA6   // All pixels normal
 
-#define OLED_ALL_PIXELS_ON 0xA5 // all pixels on
+#define OLED_ALL_PIXELS_ON 0xA5   // all pixels on
 #define OLED_PIXELS_FROM_RAM 0xA4 // pixels mapped to display RAM contents
 
 #define OLED_VERTICAL_FLIPPED 0xC0 // reversed COM scan direction
-#define OLED_VERTICAL_NORMAL 0xC8 // normal COM scan direction
+#define OLED_VERTICAL_NORMAL 0xC8  // normal COM scan direction
 
 #define OLED_HORIZ_FLIPPED 0xA0 // reversed segment re-map
-#define OLED_HORIZ_NORMAL 0xA1 // normal segment re-map
+#define OLED_HORIZ_NORMAL 0xA1  // normal segment re-map
 
 // -----
-
 #define WIDTH 128 /**< The width of the display in pixels */
 #define HEIGHT 64 /**< The height of the display in pixels */
 
-#define COLUMN_ADDRESS_END (WIDTH - 1) & 127   // 128 pixels wide
-#define PAGE_ADDRESS_END ((HEIGHT/8)-1) & 7    // 8 pages high
+#define COLUMN_ADDRESS_END (WIDTH - 1) & 127    // 128 pixels wide
+#define PAGE_ADDRESS_END ((HEIGHT / 8) - 1) & 7 // 8 pages high
 
 /** \brief
  * Eliminate the USB stack to free up code space.
@@ -414,12 +269,13 @@
  *
  * \see Arduboy2Core::exitToBootloader()
  */
-#define ARDUBOY_NO_USB int main() __attribute__ ((OS_main)); \
-int main() { \
-  Arduboy2Core::mainNoUSB(); \
-  return 0; \
-}
-
+#define ARDUBOY_NO_USB                 \
+  int main() __attribute__((OS_main)); \
+  int main()                           \
+  {                                    \
+    Arduboy2Core::mainNoUSB();         \
+    return 0;                          \
+  }
 
 /** \brief
  * Lower level functions generally dealing directly with the hardware.
@@ -439,17 +295,19 @@ class Arduboy2Core
 {
   friend class Arduboy2Ex;
 
-  public:
-    Arduboy2Core();
+public:
+  Arduboy2Core();
 
-#if defined (ESP8266) || defined (ESP32)		
-    void setExternalButtons(uint8_t but);	
-		
-	void setExternalButtonsHandler(void (*function)());
-#endif		
-				
-		
-    /** \brief
+  // sets the global uin8_t externalButtons that stores the current Button States
+  void setExternalButtons(uint8_t but);
+
+  // sets a void function that is called whenever buttonState is called, can be used with the function above
+  void setExternalButtonsHandler(void (*function)());
+
+  // sets a uint8_t function that is called whenever buttonState is called and sets the externalButtons
+  void setExternalButtonsFunction(uint8_t (*function)());
+
+  /** \brief
      * Idle the CPU to save power.
      *
      * \details
@@ -459,9 +317,9 @@ class Arduboy2Core
      * app should be able to sleep maybe half the time in between rendering
      * it's own frames.
      */
-    void static idle();
+  void static idle();
 
-    /** \brief
+  /** \brief
      * Put the display into data mode.
      *
      * \details
@@ -475,9 +333,9 @@ class Arduboy2Core
      *
      * \see LCDCommandMode() SPItransfer()
      */
-    void static LCDDataMode();
+  void static LCDDataMode();
 
-    /** \brief
+  /** \brief
      * Put the display into command mode.
      *
      * \details
@@ -499,9 +357,9 @@ class Arduboy2Core
      *
      * \see LCDDataMode() sendLCDCommand() SPItransfer()
      */
-    void static LCDCommandMode();
+  void static LCDCommandMode();
 
-    /** \brief
+  /** \brief
      * Transfer a byte to the display.
      *
      * \param data The byte to be sent to the display.
@@ -514,9 +372,9 @@ class Arduboy2Core
      *
      * \see LCDDataMode() LCDCommandMode() sendLCDCommand()
      */
-    void static SPItransfer(uint8_t data);
+  void static SPItransfer(uint8_t data);
 
-    /** \brief
+  /** \brief
      * Turn the display off.
      *
      * \details
@@ -527,9 +385,9 @@ class Arduboy2Core
      *
      * \see displayOn()
      */
-    void static displayOff();
+  void static displayOff();
 
-    /** \brief
+  /** \brief
      * Turn the display on.
      *
      * \details
@@ -543,9 +401,9 @@ class Arduboy2Core
      *
      * \see displayOff()
      */
-    void static displayOn();
+  void static displayOn();
 
-    /** \brief
+  /** \brief
      * Get the width of the display in pixels.
      *
      * \return The width of the display in pixels.
@@ -554,9 +412,9 @@ class Arduboy2Core
      * In most cases, the defined value `WIDTH` would be better to use instead
      * of this function.
      */
-    uint8_t static width();
+  uint8_t static width();
 
-    /** \brief
+  /** \brief
      * Get the height of the display in pixels.
      *
      * \return The height of the display in pixels.
@@ -565,9 +423,9 @@ class Arduboy2Core
      * In most cases, the defined value `HEIGHT` would be better to use instead
      * of this function.
      */
-    uint8_t static height();
+  uint8_t static height();
 
-    /** \brief
+  /** \brief
      * Get the current state of all buttons as a bitmask.
      *
      * \return A bitmask of the state of all the buttons.
@@ -580,9 +438,9 @@ class Arduboy2Core
      *
      * LEFT_BUTTON, RIGHT_BUTTON, UP_BUTTON, DOWN_BUTTON, A_BUTTON, B_BUTTON
      */
-    uint8_t static buttonsState();
+  uint8_t static buttonsState();
 
-    /** \brief
+  /** \brief
      * Paint 8 pixels vertically to the display.
      *
      * \param pixels A byte whose bits specify a vertical column of 8 pixels.
@@ -612,9 +470,9 @@ class Arduboy2Core
      *     . . . . . . . . (end of page 1)  X . X . . . . . (end of page 1)
      *     . . . . . . . . (page 2)         . . . . . . . . (page 2)
      */
-    void static paint8Pixels(uint8_t pixels);
+  void static paint8Pixels(uint8_t pixels);
 
-    /** \brief
+  /** \brief
      * Paints an entire image directly to the display from program memory.
      *
      * \param image A byte array in program memory representing the entire
@@ -630,9 +488,9 @@ class Arduboy2Core
      *
      * \see paint8Pixels()
      */
-    void static paintScreen(const uint8_t *image);
+  void static paintScreen(const uint8_t *image);
 
-    /** \brief
+  /** \brief
      * Paints an entire image directly to the display from an array in RAM.
      *
      * \param image A byte array in RAM representing the entire contents of
@@ -654,18 +512,18 @@ class Arduboy2Core
      *
      * \see paint8Pixels()
      */
-    void static paintScreen(uint8_t image[], bool clear = false);
+  void static paintScreen(uint8_t image[], bool clear = false);
 
-    /** \brief
+  /** \brief
      * Blank the display screen by setting all pixels off.
      *
      * \details
      * All pixels on the screen will be written with a value of 0 to turn
      * them off.
      */
-    void static blank();
+  void static blank();
 
-    /** \brief
+  /** \brief
      * Invert the entire display or set it back to normal.
      *
      * \param inverse `true` will invert the display. `false` will set the
@@ -680,9 +538,9 @@ class Arduboy2Core
      * until it is set back to non-inverted mode by calling this function with
      * `false`.
      */
-    void static invert(bool inverse);
+  void static invert(bool inverse);
 
-    /** \brief
+  /** \brief
      * Turn all display pixels on or display the buffer contents.
      *
      * \param on `true` turns all pixels on. `false` displays the contents
@@ -701,9 +559,9 @@ class Arduboy2Core
      *
      * \see invert()
      */
-    void static allPixelsOn(bool on);
+  void static allPixelsOn(bool on);
 
-    /** \brief
+  /** \brief
      * Flip the display vertically or set it back to normal.
      *
      * \param flipped `true` will set vertical flip mode. `false` will set
@@ -719,9 +577,9 @@ class Arduboy2Core
      *
      * \see flipHorizontal()
      */
-    void static flipVertical(bool flipped);
+  void static flipVertical(bool flipped);
 
-    /** \brief
+  /** \brief
      * Flip the display horizontally or set it back to normal.
      *
      * \param flipped `true` will set horizontal flip mode. `false` will set
@@ -737,9 +595,9 @@ class Arduboy2Core
      *
      * \see flipVertical()
      */
-    void static flipHorizontal(bool flipped);
+  void static flipHorizontal(bool flipped);
 
-    /** \brief
+  /** \brief
      * Send a single command byte to the display.
      *
      * \param command The command byte to send to the display.
@@ -753,9 +611,9 @@ class Arduboy2Core
      * Sending improper commands to the display can place it into invalid or
      * unexpected states, possibly even causing physical damage.
      */
-    void static sendLCDCommand(uint8_t command);
+  void static sendLCDCommand(uint8_t command);
 
-    /** \brief
+  /** \brief
      * Set the light output of the RGB LED.
      *
      * \param red,green,blue The brightness value for each LED.
@@ -787,9 +645,9 @@ class Arduboy2Core
      *
      * \see setRGBled(uint8_t, uint8_t) digitalWriteRGB() freeRGBled()
      */
-    void static setRGBled(uint8_t red, uint8_t green, uint8_t blue);
+  void static setRGBled(uint8_t red, uint8_t green, uint8_t blue);
 
-    /** \brief
+  /** \brief
      * Set the brightness of one of the RGB LEDs without affecting the others.
      *
      * \param color The name of the LED to set. The value given should be one
@@ -809,10 +667,9 @@ class Arduboy2Core
      *
      * \see setRGBled(uint8_t, uint8_t, uint8_t) digitalWriteRGB() freeRGBled()
      */
-    void static setRGBled(uint8_t color, uint8_t val);
+  void static setRGBled(uint8_t color, uint8_t val);
 
-
-    /** \brief
+  /** \brief
      * Relinquish analog control of the RGB LED.
      *
      * \details
@@ -822,9 +679,9 @@ class Arduboy2Core
      *
      * \see digitalWriteRGB() setRGBled()
      */
-    void static freeRGBled();
+  void static freeRGBled();
 
-    /** \brief
+  /** \brief
      * Set the RGB LEDs digitally, to either fully on or fully off.
      *
      * \param red,green,blue Use value RGB_ON or RGB_OFF to set each LED.
@@ -867,9 +724,9 @@ class Arduboy2Core
      *
      * \see digitalWriteRGB(uint8_t, uint8_t) setRGBled() freeRGBled()
      */
-    void static digitalWriteRGB(uint8_t red, uint8_t green, uint8_t blue);
+  void static digitalWriteRGB(uint8_t red, uint8_t green, uint8_t blue);
 
-    /** \brief
+  /** \brief
      * Set one of the RGB LEDs digitally, to either fully on or fully off.
      *
      * \param color The name of the LED to set. The value given should be one
@@ -885,9 +742,9 @@ class Arduboy2Core
      *
      * \see digitalWriteRGB(uint8_t, uint8_t, uint8_t) setRGBled() freeRGBled()
      */
-    void static digitalWriteRGB(uint8_t color, uint8_t val);
+  void static digitalWriteRGB(uint8_t color, uint8_t val);
 
-    /** \brief
+  /** \brief
      * Initialize the Arduboy's hardware.
      *
      * \details
@@ -902,9 +759,9 @@ class Arduboy2Core
      *
      * \see Arduboy2Base::begin()
      */
-    void static boot();
+  void static boot();
 
-    /** \brief
+  /** \brief
      * Allow upload when the bootloader "magic number" could be corrupted.
      *
      * \details
@@ -923,9 +780,9 @@ class Arduboy2Core
      *
      * \see Arduboy2Base::flashlight() boot()
      */
-    void static safeMode();
+  void static safeMode();
 
-    /** \brief
+  /** \brief
      * Delay for the number of milliseconds, specified as a 16 bit value.
      *
      * \param ms The delay in milliseconds.
@@ -936,9 +793,9 @@ class Arduboy2Core
      * 65535 milliseconds (about 65.5 seconds). Using this function instead
      * of Arduino `delay()` will save a few bytes of code.
      */
-    void static delayShort(uint16_t ms) __attribute__ ((noinline));
+  void static delayShort(uint16_t ms) __attribute__((noinline));
 
-    /** \brief
+  /** \brief
      * Exit the sketch and start the bootloader
      *
      * \details
@@ -954,20 +811,20 @@ class Arduboy2Core
      *
      * \see ARDUBOY_NO_USB
      */
-    void static exitToBootloader();
+  void static exitToBootloader();
 
-    // Replacement main() that eliminates the USB stack code.
-    // Used by the ARDUBOY_NO_USB macro. This should not be called
-    // directly from a sketch.
-    void static mainNoUSB();	
+  // Replacement main() that eliminates the USB stack code.
+  // Used by the ARDUBOY_NO_USB macro. This should not be called
+  // directly from a sketch.
+  void static mainNoUSB();
 
-  protected:
-    // internals
-    void static setCPUSpeed8MHz();
-    void static bootSPI();
-    void static bootOLED();
-    void static bootPins();
-    void static bootPowerSaving();
+protected:
+  // internals
+  void static setCPUSpeed8MHz();
+  void static bootSPI();
+  void static bootOLED();
+  void static bootPins();
+  void static bootPowerSaving();
 };
 
 #endif

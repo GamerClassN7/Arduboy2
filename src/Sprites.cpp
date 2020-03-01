@@ -242,7 +242,7 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
 
 
     case SPRITE_PLUS_MASK:
-#if defined (ESP8266) || defined (ESP32)
+#ifndef __AVR_ATmega32U4__
       for (uint8_t a = 0; a < loop_h; a++) {
         for (uint8_t iCol = 0; iCol < rendered_width; iCol++) {
           // NOTE: this is the SPRITE_MASKED case with a little 

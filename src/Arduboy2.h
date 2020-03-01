@@ -7,18 +7,27 @@
 #ifndef ARDUBOY2_H
 #define ARDUBOY2_H
 
-#define DISPLAY_ILI9341
-#define DISPLAY_ILI9341_FILTER
+// this is for my two ps2 controller setups, you can ignore it
+//#define HARTMANNS_PS2Controller
 
-#if defined (ESP8266) || defined (ESP32)
-#ifdef DISPLAY_ILI9341
-#include "SPI.h"
-#include "TFT_eSPI.h"
-#else 
-#include <brzo_i2c.h> // Only needed for Arduino 1.6.5 and earlier
-#include "SSD1306Brzo.h"
+#if defined(HARTMANNS_PS2Controller)
+#if defined(ESP8266)
+#define DISPLAY_SSD1306
+#elif defined(ESP32)
+#define DISPLAY_TFT_eSPI
 #endif
+
+#else
+
+// please choose the display you wanna use, it will be loaded in Arduboy2Config.h
+//#define DISPLAY_Default
+//#define DISPLAY_Adafruit
+#define DISPLAY_TFT_eSPI
+//#define DISPLAY_SSD1306
+
 #endif
+
+
 
 #include <Arduino.h>
 #include <EEPROM.h>
@@ -28,7 +37,6 @@
 #include "SpritesB.h"
 #include <Print.h>
 #include <limits.h>
-
 
 /** \brief
  * Library version
@@ -58,15 +66,15 @@
 #define EEPROM_AUDIO_ON_OFF 2
 #define EEPROM_UNIT_ID 8    // A uint16_t binary unit ID
 #define EEPROM_UNIT_NAME 10 // An up to 6 character unit name. Cannot contain
-                            // 0x00 or 0xFF. Lengths less than 6 are padded
+                            // 0x00 or 0xFF. Lengths less than 6 are padded   
                             // with 0x00
 
 // EEPROM_SYS_FLAGS values
-#define SYS_FLAG_UNAME 0           // Display the unit name on the logo screen
+#define SYS_FLAG_UNAME 0 // Display the unit name on the logo screen
 #define SYS_FLAG_UNAME_MASK _BV(SYS_FLAG_UNAME)
-#define SYS_FLAG_SHOW_LOGO 1       // Show the logo sequence during boot up
+#define SYS_FLAG_SHOW_LOGO 1 // Show the logo sequence during boot up
 #define SYS_FLAG_SHOW_LOGO_MASK _BV(SYS_FLAG_SHOW_LOGO)
-#define SYS_FLAG_SHOW_LOGO_LEDS 2  // Flash the RGB led during the boot logo
+#define SYS_FLAG_SHOW_LOGO_LEDS 2 // Flash the RGB led during the boot logo
 #define SYS_FLAG_SHOW_LOGO_LEDS_MASK _BV(SYS_FLAG_SHOW_LOGO_LEDS)
 
 /** \brief
@@ -87,8 +95,8 @@
 #define PIXEL_SAFE_MODE
 
 // pixel colors
-#define BLACK 0  /**< Color value for an unlit pixel for draw functions. */
-#define WHITE 1  /**< Color value for a lit pixel for draw functions. */
+#define BLACK 0 /**< Color value for an unlit pixel for draw functions. */
+#define WHITE 1 /**< Color value for a lit pixel for draw functions. */
 /** \brief
  * Color value to indicate pixels are to be inverted.
  *
@@ -99,9 +107,9 @@
  * Only function Arduboy2Base::drawBitmap() currently supports this value.
  */
 #define INVERT 2
+#define INVERSE INVERT // sometimes INVERSE is used instead
 
 #define CLEAR_BUFFER true /**< Value to be passed to `display()` to clear the screen buffer. */
-
 
 /** \brief
  * A rectangle object for collision functions.
@@ -179,9 +187,9 @@ struct Point
  */
 class Arduboy2Base : public Arduboy2Core
 {
- friend class Arduboy2Ex;
+  friend class Arduboy2Ex;
 
- public:
+public:
   Arduboy2Base();
 
   /** \brief
@@ -608,7 +616,7 @@ class Arduboy2Base : public Arduboy2Core
    * A triangle is drawn by specifying each of the three corner locations.
    * The corners can be at any position with respect to the others.
    */
-  void fillTriangle (int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color = WHITE);
+  void fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint8_t color = WHITE);
 
   /** \brief
    * Draw a bitmap from an array in program memory.
@@ -704,7 +712,7 @@ class Arduboy2Base : public Arduboy2Core
    *
    * \see sBuffer
    */
-  uint8_t* getBuffer();
+  uint8_t *getBuffer();
 
   /** \brief
    * Seed the random number generator with a random value.
@@ -721,7 +729,7 @@ class Arduboy2Base : public Arduboy2Core
   void initRandomSeed();
 
   // Swap the values of two int16_t variables passed by reference.
-  void swap(int16_t& a, int16_t& b);
+  void swap(int16_t &a, int16_t &b);
 
   /** \brief
    * Set the frame rate used by the frame control functions.
@@ -1095,7 +1103,7 @@ class Arduboy2Base : public Arduboy2Core
    *
    * \see writeUnitName() readUnitID() Arduboy2::bootLogoExtra()
    */
-  uint8_t readUnitName(char* name);
+  uint8_t readUnitName(char *name);
 
   /** \brief
    * Write a unit name to system EEPROM.
@@ -1121,7 +1129,7 @@ class Arduboy2Base : public Arduboy2Core
    *
    * \see readUnitName() writeUnitID() Arduboy2::bootLogoExtra()
    */
-  void writeUnitName(char* name);
+  void writeUnitName(char *name);
 
   /** \brief
    * Read the "Show Boot Logo" flag in system EEPROM.
@@ -1265,44 +1273,15 @@ class Arduboy2Base : public Arduboy2Core
    *
    * \see getBuffer()
    */
-   
- 
-#if !defined (ESP8266) && !defined (ESP32)
-  static uint8_t sBuffer[(HEIGHT*WIDTH)/8];
-#else	
-	
-#ifdef DISPLAY_ILI9341 
-	void displayLineOnILI9341(uint16_t xPos, uint16_t yStart, uint16_t yLength, uint8_t color8Bit);	
-	void manipulateDisplayBuffer();
-	void displayILI9341();
-	
-#ifdef DISPLAY_ILI9341_FILTER	
-	static uint8_t oBuffer[HEIGHT*WIDTH];
-  static uint8_t sBuffer[(HEIGHT*2*WIDTH*2)];
-  static uint8_t cBuffer[(HEIGHT*2*WIDTH*2)];
-	
-	// hold the four colors of the current filter
-	uint16_t filterColorsArray[4];
-	uint8_t filterSet;
-	
-	void toggleFilterSet();
-	void changeFilterSet(uint8_t set);
 
-	void set16BitFilterColors(uint16_t lightColor, uint16_t lightGrey, uint16_t darkGrey, uint16_t darkColor);
-	
-#else
-  static uint8_t sBuffer[(HEIGHT*WIDTH)/8];
-  static uint8_t cBuffer[(HEIGHT*WIDTH)/8];
-#endif	
-	
-#else
-	// set the pointer to the oled library in arduboy::begin()
-  static uint8_t* sBuffer;
-#endif
+  // moved form ArduboyCore, because it is now done in Display_xxxx class 
+  void paintScreen(const uint8_t *image);
+  void paintScreen(uint8_t image[], bool clear);
 
-#endif	
+  // just a pointer set in arduboy.begin(), the array is implemented in Display_xxxx class 
+  static uint8_t *sBuffer;
 
- protected:
+protected:
   // helper function for sound enable/disable system control
   void sysCtrlSound(uint8_t buttons, uint8_t led, uint8_t eeVal);
 
@@ -1324,7 +1303,6 @@ class Arduboy2Base : public Arduboy2Core
   bool justRendered;
   uint8_t lastFrameDurationMs;
 };
-
 
 //==============================
 //========== Arduboy2 ==========
@@ -1349,9 +1327,9 @@ class Arduboy2Base : public Arduboy2Core
  */
 class Arduboy2 : public Print, public Arduboy2Base
 {
- friend class Arduboy2Ex;
+  friend class Arduboy2Ex;
 
- public:
+public:
   Arduboy2();
 
   /** \class Print
@@ -1633,7 +1611,7 @@ class Arduboy2 : public Print, public Arduboy2Base
    */
   void clear();
 
- protected:
+protected:
   int16_t cursor_x;
   int16_t cursor_y;
   uint8_t textColor;
@@ -1643,4 +1621,3 @@ class Arduboy2 : public Print, public Arduboy2Base
 };
 
 #endif
-

@@ -1,21 +1,28 @@
 /*
-Buttons example
-June 11, 2015
-Copyright (C) 2015 David Martinez
-All rights reserved.
-This code is the most basic barebones code for showing how to use buttons in
-Arduboy.
+  Buttons example
+  June 11, 2015
+  Copyright (C) 2015 David Martinez
+  All rights reserved.
+  This code is the most basic barebones code for showing how to use buttons in
+  Arduboy.
 
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 */
+
+#define BUTTONS_FROM_CLASS
 
 #include <Arduboy2.h>
 
 // Make an instance of arduboy used for many functions
 Arduboy2 arduboy;
+
+#ifdef BUTTONS_FROM_CLASS
+#include <PS2X_lib.h>
+PS2X ps2x;
+#endif
 
 // Variables for your game go here.
 char title[] = "Press Buttons!";
@@ -42,10 +49,45 @@ byte y;
 // the bottom of the screen.
 #define Y_MAX (HEIGHT - CHAR_HEIGHT)
 
+#ifdef BUTTONS_FROM_CLASS
+void getButtons() {
+  // this function is called inside arduboy whenever buttonStates() is called
+  arduboy.setExternalButtons(ps2x.getArduboyButtons());
+}
+#else
+uint8_t getButtons() {
+  uint8_t but = 0;
+
+  // read the pins you connected your buttons with
+  but = digitalRead(5);
+
+  /*
+    // use those button defines from Arduboy2Core.h to set the correct button bits
+  #define LEFT_BUTTON _BV(5)
+  #define RIGHT_BUTTON _BV(6)
+  #define UP_BUTTON _BV(7)
+  #define DOWN_BUTTON _BV(4)
+  #define A_BUTTON _BV(3) 
+  #define B_BUTTON _BV(2) 
+  */
+  return but;
+}
+#endif
 
 // This function runs once in your game.
 // use it for anything that needs to be set only once in your game.
 void setup() {
+#ifdef BUTTONS_FROM_CLASS
+  // initialise your get button class
+  ps2x.begin();;
+
+  // parameter is a void function that sets the buttons via arduboy.setExternalButtons function
+  arduboy.setExternalButtonsHandler(getButtons);
+#else
+  // parameter is a uint8_t function that directly sets the buttons
+  arduboy.setExternalButtonsFunction(getButtons);
+#endif
+
   //initiate arduboy instance
   arduboy.begin();
 
@@ -66,28 +108,33 @@ void loop() {
   if (!(arduboy.nextFrame()))
     return;
 
+#ifdef BUTTONS_FROM_CLASS
+  // maybe your class needs to be updated from time to time
+  ps2x.read_gamepad();
+#endif
+
   // the next couple of lines will deal with checking if the D-pad buttons
   // are pressed and move our text accordingly.
   // We check to make sure that x and y stay within a range that keeps the
   // text on the screen.
 
   // if the right button is pressed move 1 pixel to the right every frame
-  if(arduboy.pressed(RIGHT_BUTTON) && (x < X_MAX)) {
+  if (arduboy.pressed(RIGHT_BUTTON) && (x < X_MAX)) {
     x++;
   }
 
   // if the left button is pressed move 1 pixel to the left every frame
-  if(arduboy.pressed(LEFT_BUTTON) && (x > 0)) {
+  if (arduboy.pressed(LEFT_BUTTON) && (x > 0)) {
     x--;
   }
 
   // if the up button or B button is pressed move 1 pixel up every frame
-  if((arduboy.pressed(UP_BUTTON) || arduboy.pressed(B_BUTTON)) && (y > 0)) {
+  if ((arduboy.pressed(UP_BUTTON) || arduboy.pressed(B_BUTTON)) && (y > 0)) {
     y--;
   }
 
   // if the down button or A button is pressed move 1 pixel down every frame
-  if((arduboy.pressed(DOWN_BUTTON) || arduboy.pressed(A_BUTTON)) && (y < Y_MAX)) {
+  if ((arduboy.pressed(DOWN_BUTTON) || arduboy.pressed(A_BUTTON)) && (y < Y_MAX)) {
     y++;
   }
 

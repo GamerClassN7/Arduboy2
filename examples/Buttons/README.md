@@ -1,4 +1,4 @@
 Buttons
 =======
 
-An example that demonstrates how to capture input from the buttons.
+A an example that demonstrates how to capture input from the buttons.

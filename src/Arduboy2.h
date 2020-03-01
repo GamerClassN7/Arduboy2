@@ -11,6 +11,7 @@
 //#define HARTMANNS_PS2Controller
 
 #if defined(HARTMANNS_PS2Controller)
+#define COUNT_LAST_FRAMES
 #if defined(ESP8266)
 #define DISPLAY_SSD1306
 #elif defined(ESP32)
@@ -26,8 +27,6 @@
 //#define DISPLAY_SSD1306
 
 #endif
-
-
 
 #include <Arduino.h>
 #include <EEPROM.h>
@@ -64,10 +63,12 @@
 #define EEPROM_VERSION 0
 #define EEPROM_SYS_FLAGS 1
 #define EEPROM_AUDIO_ON_OFF 2
-#define EEPROM_UNIT_ID 8    // A uint16_t binary unit ID
-#define EEPROM_UNIT_NAME 10 // An up to 6 character unit name. Cannot contain
-                            // 0x00 or 0xFF. Lengths less than 6 are padded   
-                            // with 0x00
+#define EEPROM_UNIT_ID 8      
+#define EEPROM_UNIT_NAME 10   
+                              // A uint16_t binary unit ID
+                              // An up to 6 character unit name. Cannot contain 
+                              // 0x00 or 0xFF. Lengths less than 6 are padded 
+                              // with 0x00
 
 // EEPROM_SYS_FLAGS values
 #define SYS_FLAG_UNAME 0 // Display the unit name on the logo screen
@@ -1274,11 +1275,43 @@ public:
    * \see getBuffer()
    */
 
-  // moved form ArduboyCore, because it is now done in Display_xxxx class 
+  /** \brief
+     * Get the current state of all buttons as a bitmask.
+     *
+     * \return A bitmask of the state of all the buttons.
+     *
+     * \details
+     * The returned mask contains a bit for each button. For any pressed button,
+     * its bit will be 1. For released buttons their associated bits will be 0.
+     *
+     * The following defined mask values should be used for the buttons:
+     *
+     * LEFT_BUTTON, RIGHT_BUTTON, UP_BUTTON, DOWN_BUTTON, A_BUTTON, B_BUTTON
+     */
+  uint8_t buttonsState();
+
+  // redraws the full screen
+  void redraw();
+
+  // sets the global uin8_t externalButtons that stores the current Button States
+  void setExternalButtons(uint8_t but);
+
+  // sets a void function that is called whenever buttonState is called, can be used with the function above
+  void setExternalButtonsHandler(void (*function)());
+
+  // sets a uint8_t function that is called whenever buttonState is called and sets the externalButtons
+  void setExternalButtonsFunction(uint8_t (*function)());
+
+  uint32_t nextButtonsRead;
+  uint8_t externalButtons;
+  void (*externalButtonsHandler)();
+  uint8_t (*externalButtonsFunction)();
+
+  // moved form ArduboyCore, because it is now done in Display_xxxx class
   void paintScreen(const uint8_t *image);
   void paintScreen(uint8_t image[], bool clear);
 
-  // just a pointer set in arduboy.begin(), the array is implemented in Display_xxxx class 
+  // just a pointer set in arduboy.begin(), the array is implemented in Display_xxxx class
   static uint8_t *sBuffer;
 
 protected:
@@ -1610,6 +1643,16 @@ public:
    * Clear the display buffer and set the text cursor to location 0, 0
    */
   void clear();
+
+#if defined(COUNT_LAST_FRAMES)
+  uint16_t getFramesPerSecond();
+  uint16_t framesNow = 0;
+  uint16_t framesCurrent = 0;
+  uint16_t secondsNow = 0;
+  uint16_t secondsCurrent = 255;
+
+  void printFramesPerSecond();
+#endif
 
 protected:
   int16_t cursor_x;

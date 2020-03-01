@@ -10,14 +10,8 @@
 #include <Wire.h>
 #endif
 
-uint8_t externalButtons;
-
-void (*externalButtonsHandler)() = nullptr;
-
-uint8_t (*externalButtonsFunction)() = nullptr;
-
 #ifdef LIMIT_BUTTON_CALLS
-static uint32_t nextButtonsRead = 0;
+
 #endif
 
 #ifdef __AVR_ATmega32U4__
@@ -517,91 +511,6 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
 }
 
 /* Buttons */
-
-#ifndef __AVR_ATmega32U4__
-void Arduboy2Core::setExternalButtons(uint8_t but)
-{
-  externalButtons = but;
-}
-
-void Arduboy2Core::setExternalButtonsHandler(void (*function)())
-{
-  externalButtonsHandler = function;
-}
-
-void Arduboy2Core::setExternalButtonsFunction(uint8_t (*function)())
-{
-  externalButtonsFunction = function;
-}
-#endif
-
-uint8_t Arduboy2Core::buttonsState()
-{
-#if defined(__AVR_ATmega32U4__)
-  uint8_t buttons;
-
-  // get the buttons form PS2 lib
-  buttons = 0;
-
-#ifdef ARDUBOY_10
-  // up, right, left, down
-  buttons = ((~PINF) &
-             (_BV(UP_BUTTON_BIT) | _BV(RIGHT_BUTTON_BIT) |
-              _BV(LEFT_BUTTON_BIT) | _BV(DOWN_BUTTON_BIT)));
-  // A
-  if (bitRead(A_BUTTON_PORTIN, A_BUTTON_BIT) == 0)
-  {
-    buttons |= A_BUTTON;
-  }
-  // B
-  if (bitRead(B_BUTTON_PORTIN, B_BUTTON_BIT) == 0)
-  {
-    buttons |= B_BUTTON;
-  }
-#elif defined(AB_DEVKIT)
-  // down, left, up
-  buttons = ((~PINB) &
-             (_BV(DOWN_BUTTON_BIT) | _BV(LEFT_BUTTON_BIT) | _BV(UP_BUTTON_BIT)));
-  // right
-  if (bitRead(RIGHT_BUTTON_PORTIN, RIGHT_BUTTON_BIT) == 0)
-  {
-    buttons |= RIGHT_BUTTON;
-  }
-  // A
-  if (bitRead(A_BUTTON_PORTIN, A_BUTTON_BIT) == 0)
-  {
-    buttons |= A_BUTTON;
-  }
-  // B
-  if (bitRead(B_BUTTON_PORTIN, B_BUTTON_BIT) == 0)
-  {
-    buttons |= B_BUTTON;
-  }
-#endif
-
-  return buttons;
-
-#else
-
-#ifdef LIMIT_BUTTON_CALLS
-  // return the buttons states from the last call
-  if (millis() < nextButtonsRead)
-    return externalButtons;
-
-  // set time for the next reading
-  nextButtonsRead = millis() + LIMIT_BUTTON_CALLS;
-#endif
-
-  if (externalButtonsFunction != nullptr)
-    externalButtons = (*externalButtonsFunction)();
-
-  // in this callback function the externalButtons should be updated#
-  if (externalButtonsHandler != nullptr)
-    (*externalButtonsHandler)();
-
-  return externalButtons;
-#endif
-}
 
 // delay in ms with 16 bit duration
 void Arduboy2Core::delayShort(uint16_t ms)

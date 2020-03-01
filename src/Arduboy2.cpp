@@ -23,6 +23,11 @@ Arduboy2Base::Arduboy2Base()
   setFrameDuration(16);
   frameCount = 0;
   justRendered = false;
+
+  externalButtonsHandler = nullptr;
+  externalButtonsFunction = nullptr;
+  nextButtonsRead = 0;
+  externalButtons = 0;
 }
 
 // functions called here should be public so users can create their
@@ -58,6 +63,11 @@ void Arduboy2Base::begin()
   //  bootLogoSpritesBOverwrite();
 
   waitNoButtons(); // wait for all buttons to be release
+}
+
+void Arduboy2Base::redraw() 
+{
+  arduboyDisplay.redraw();
 }
 
 void Arduboy2Base::flashlight()
@@ -997,6 +1007,87 @@ uint8_t *Arduboy2Base::getBuffer()
   return sBuffer;
 }
 
+uint8_t Arduboy2Base::buttonsState()
+{
+#if defined(__AVR_ATmega32U4__)
+  uint8_t buttons;
+
+  // get the buttons form PS2 lib
+  buttons = 0;
+
+#ifdef ARDUBOY_10
+  // up, right, left, down
+  buttons = ((~PINF) &
+             (_BV(UP_BUTTON_BIT) | _BV(RIGHT_BUTTON_BIT) |
+              _BV(LEFT_BUTTON_BIT) | _BV(DOWN_BUTTON_BIT)));
+  // A
+  if (bitRead(A_BUTTON_PORTIN, A_BUTTON_BIT) == 0)
+  {
+    buttons |= A_BUTTON;
+  }
+  // B
+  if (bitRead(B_BUTTON_PORTIN, B_BUTTON_BIT) == 0)
+  {
+    buttons |= B_BUTTON;
+  }
+#elif defined(AB_DEVKIT)
+  // down, left, up
+  buttons = ((~PINB) &
+             (_BV(DOWN_BUTTON_BIT) | _BV(LEFT_BUTTON_BIT) | _BV(UP_BUTTON_BIT)));
+  // right
+  if (bitRead(RIGHT_BUTTON_PORTIN, RIGHT_BUTTON_BIT) == 0)
+  {
+    buttons |= RIGHT_BUTTON;
+  }
+  // A
+  if (bitRead(A_BUTTON_PORTIN, A_BUTTON_BIT) == 0)
+  {
+    buttons |= A_BUTTON;
+  }
+  // B
+  if (bitRead(B_BUTTON_PORTIN, B_BUTTON_BIT) == 0)
+  {
+    buttons |= B_BUTTON;
+  }
+#endif
+
+  return buttons;
+
+#else
+
+  // return the buttons states from the last call
+  if (millis() < nextButtonsRead)
+    return externalButtons;
+
+  // set time for the next reading
+  nextButtonsRead = millis() + eachFrameMillis;
+
+  if (externalButtonsFunction != nullptr)
+    externalButtons = (*externalButtonsFunction)();
+
+  // in this callback function the externalButtons should be updated#
+  if (externalButtonsHandler != nullptr)
+    (*externalButtonsHandler)();
+
+  return externalButtons;
+#endif
+}
+
+void Arduboy2Base::setExternalButtons(uint8_t but)
+{
+  externalButtons = but;
+}
+
+void Arduboy2Base::setExternalButtonsHandler(void (*function)())
+{
+  externalButtonsHandler = function;
+}
+
+void Arduboy2Base::setExternalButtonsFunction(uint8_t (*function)())
+{
+  externalButtonsFunction = function;
+}
+
 bool Arduboy2Base::pressed(uint8_t buttons)
 {
   return (buttonsState() & buttons) == buttons;
@@ -1359,3 +1450,39 @@ void Arduboy2::clear()
   Arduboy2Base::clear();
   cursor_x = cursor_y = 0;
 }
+
+#ifdef COUNT_LAST_FRAMES
+uint16_t Arduboy2::getFramesPerSecond() {
+
+  // get the current second
+  secondsNow = millis() / 1000;
+
+  //Serial.println("secondsNow:" + String(secondsNow) + " at mapIndex:" + String(mapIndex));
+
+  if (secondsNow != secondsCurrent) {
+
+    // to reset only with every new second
+    secondsCurrent = secondsNow;
+
+    // save the last frames per second
+    framesCurrent = framesNow;
+
+    // reset the counter
+    framesNow = 0;
+
+  } else {
+    // count
+    framesNow++;
+  }
+
+  return framesCurrent;
+}
+
+void Arduboy2::printFramesPerSecond() {
+	
+  setCursor(150, 170);
+  fillRect(150, 170, 20, 10, WHITE);	
+
+  print(getFramesPerSecond());
+}
+#endif

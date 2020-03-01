@@ -9,13 +9,11 @@
 
 #include <Arduino.h>
 
-
 #ifdef DISPLAY_SSD1306
 #include <brzo_i2c.h>
 #include "SSD1306Brzo.h"
 //include "../displays/Display_SSD1306.h"
 #endif
-
 
 // the speaker pins for my two esp setups
 #ifndef __AVR_ATmega328P__
@@ -27,9 +25,6 @@
 #error please choose a speaker pin for your setup
 #endif
 #endif
-
-// this define limits the calls of the externalButtonsHandler() function
-#define LIMIT_BUTTON_CALLS (1000 / 30)
 
 #ifdef __AVR_ATmega328P__
 #include <avr/power.h>
@@ -298,15 +293,6 @@ class Arduboy2Core
 public:
   Arduboy2Core();
 
-  // sets the global uin8_t externalButtons that stores the current Button States
-  void setExternalButtons(uint8_t but);
-
-  // sets a void function that is called whenever buttonState is called, can be used with the function above
-  void setExternalButtonsHandler(void (*function)());
-
-  // sets a uint8_t function that is called whenever buttonState is called and sets the externalButtons
-  void setExternalButtonsFunction(uint8_t (*function)());
-
   /** \brief
      * Idle the CPU to save power.
      *
@@ -424,21 +410,6 @@ public:
      * of this function.
      */
   uint8_t static height();
-
-  /** \brief
-     * Get the current state of all buttons as a bitmask.
-     *
-     * \return A bitmask of the state of all the buttons.
-     *
-     * \details
-     * The returned mask contains a bit for each button. For any pressed button,
-     * its bit will be 1. For released buttons their associated bits will be 0.
-     *
-     * The following defined mask values should be used for the buttons:
-     *
-     * LEFT_BUTTON, RIGHT_BUTTON, UP_BUTTON, DOWN_BUTTON, A_BUTTON, B_BUTTON
-     */
-  uint8_t static buttonsState();
 
   /** \brief
      * Paint 8 pixels vertically to the display.

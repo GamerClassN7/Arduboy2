@@ -15,7 +15,6 @@
 #define SCREEN_OFFSET_X (((SCREEN_WIDTH - WIDTH * 2) / 2) - 5)
 #define SCREEN_OFFSET_Y (((SCREEN_HEIGHT - HEIGHT * 2) / 2) - 30)
 
-
 #if defined(HARTMANNS_PS2Controller)
 #include <PS2X_lib.h>
 extern PS2X ps2x;
@@ -48,6 +47,12 @@ public:
         drawBackground();
     }
 
+    void redraw() 
+    {
+        forceCompleteDraw = true;
+        drawBackground();
+    }
+
     void newFrame()
     {
 #if defined(HARTMANNS_PS2Controller)
@@ -68,7 +73,7 @@ public:
                 nextDisplayModeChange = millis() + 200;
             }
         }
-#endif				
+#endif        
     }
 
     void display()

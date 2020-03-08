@@ -1,8 +1,6 @@
 #ifndef ARDUBOY2_BASE_H
 #define ARDUBOY2_BASE_H
 
-//TODO hier soll die config rein
-
 #include <Arduino.h>
 #include "../src/Arduboy2Core.h"
 
@@ -154,6 +152,11 @@ public:
     }
 
     void paintScreen(const uint8_t *image)
+    {
+
+    }
+
+    void redraw() 
     {
 
     }

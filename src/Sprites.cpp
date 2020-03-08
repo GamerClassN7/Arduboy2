@@ -44,7 +44,7 @@ void Sprites::draw(int16_t x, int16_t y,
   if (bitmap == NULL)
     return;
 
-  uint8_t width = pgm_read_byte(bitmap);
+  uint8_t width = pgm_read_word(bitmap);
   uint8_t height = pgm_read_byte(++bitmap);
   bitmap++;
   if (frame > 0 || sprite_frame > 0) {
@@ -80,7 +80,7 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
 
   // xOffset technically doesn't need to be 16 bit but the math operations
   // are measurably faster if it is
-  uint16_t xOffset, ofs;
+  int16_t xOffset, ofs;
   int8_t yOffset = y & 7;
   int8_t sRow = y / 8;
   uint8_t loop_h, start_h, rendered_width;
@@ -119,9 +119,11 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
 
   // prepare variables for loops later so we can compare with 0
   // instead of comparing two variables
+
   loop_h -= start_h;
 
   sRow += start_h;
+
   ofs = (sRow * WIDTH) + x + xOffset;
   uint8_t *bofs = (uint8_t *)bitmap + (start_h * w) + xOffset;
   uint8_t data;
@@ -150,8 +152,8 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
           }
           if (yOffset != 0 && sRow < 7) {
             data = Arduboy2Base::sBuffer[ofs + WIDTH];
-            data &= (*((unsigned char *) (&mask_data) + 1));
-            data |= (*((unsigned char *) (&bitmap_data) + 1));
+            data &= (*((byte *) (&mask_data) + 1));
+            data |= (*((byte *) (&bitmap_data) + 1));
             Arduboy2Base::sBuffer[ofs + WIDTH] = data;
           }
           ofs++;
@@ -167,11 +169,11 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
       for (uint8_t a = 0; a < loop_h; a++) {
         for (uint8_t iCol = 0; iCol < rendered_width; iCol++) {
           bitmap_data = pgm_read_byte(bofs) * mul_amt;
-          if (sRow >= 0) {
+          if (sRow >= 0 && ofs >= 0) {
             Arduboy2Base::sBuffer[ofs] |= (uint8_t)(bitmap_data);
           }
-          if (yOffset != 0 && sRow < 7) {
-            Arduboy2Base::sBuffer[ofs + WIDTH] |= (*((unsigned char *) (&bitmap_data) + 1));
+          if (yOffset != 0 && sRow < 7 && ofs + WIDTH >= 0) {
+            Arduboy2Base::sBuffer[ofs + WIDTH] |= (*((uint8_t *) (&bitmap_data) + 1));
           }
           ofs++;
           bofs++;
@@ -190,7 +192,7 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
             Arduboy2Base::sBuffer[ofs]  &= ~(uint8_t)(bitmap_data);
           }
           if (yOffset != 0 && sRow < 7) {
-            Arduboy2Base::sBuffer[ofs + WIDTH] &= ~(*((unsigned char *) (&bitmap_data) + 1));
+            Arduboy2Base::sBuffer[ofs + WIDTH] &= ~(*((byte *) (&bitmap_data) + 1));
           }
           ofs++;
           bofs++;
@@ -225,8 +227,8 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
           }
           if (yOffset != 0 && sRow < 7) {
             data = Arduboy2Base::sBuffer[ofs + WIDTH];
-            data &= (*((unsigned char *) (&mask_data) + 1));
-            data |= (*((unsigned char *) (&bitmap_data) + 1));
+            data &= (*((byte *) (&mask_data) + 1));
+            data |= (*((byte *) (&bitmap_data) + 1));
             Arduboy2Base::sBuffer[ofs + WIDTH] = data;
           }
           ofs++;
@@ -252,7 +254,7 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
           // mask needs to be bit flipped
           bitmap_data = pgm_read_byte(bofs) * mul_amt;	
 
-		  // increment because after the image is the mask
+		      // increment because after the image is the mask
           bofs++;
 		  
           mask_data = ~(pgm_read_byte(bofs) * mul_amt);
@@ -265,8 +267,8 @@ void Sprites::drawBitmap(int16_t x, int16_t y,
           }
           if (yOffset != 0 && sRow < 7) {
             data = Arduboy2Base::sBuffer[ofs + WIDTH];
-            data &= (*((unsigned char *) (&mask_data) + 1));
-            data |= (*((unsigned char *) (&bitmap_data) + 1));
+            data &= (*((byte *) (&mask_data) + 1));
+            data |= (*((byte *) (&bitmap_data) + 1));
             Arduboy2Base::sBuffer[ofs + WIDTH] = data;
           }
           ofs++;

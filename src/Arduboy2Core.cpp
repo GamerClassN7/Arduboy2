@@ -515,7 +515,7 @@ void Arduboy2Core::digitalWriteRGB(uint8_t color, uint8_t val)
 // delay in ms with 16 bit duration
 void Arduboy2Core::delayShort(uint16_t ms)
 {
-  delay((unsigned long)ms);
+  delay((uint32_t)ms);
 }
 
 void Arduboy2Core::exitToBootloader()
